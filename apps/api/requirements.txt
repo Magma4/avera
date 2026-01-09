@@ -1,0 +1,8 @@
+django>=5.0,<6.0
+djangorestframework
+django-cors-headers
+psycopg[binary]
+python-dotenv
+h3
+redis
+celery
