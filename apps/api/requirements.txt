@@ -6,3 +6,10 @@ python-dotenv
 h3
 redis
 celery
+feedparser
+beautifulsoup4
+requests
+pyyaml
+drf-spectacular
+pandas
+numpy

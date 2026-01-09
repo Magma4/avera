@@ -1,6 +1,16 @@
 from django.urls import path
-from .views import SafetySnapshotView
+from .views import (
+    SafetySnapshotView,
+    AlertsGeoJSONView,
+    CrimeHeatmapView,
+    ContextIncidentsView,
+    ContextEnvironmentView
+)
 
 urlpatterns = [
-    path("snapshot/", SafetySnapshotView.as_view(), name="safety-snapshot"),
+    path('snapshot/', SafetySnapshotView.as_view(), name='snapshot'),
+    path('alerts/', AlertsGeoJSONView.as_view(), name='alerts'),
+    path('heatmap/', CrimeHeatmapView.as_view(), name='heatmap'),
+    path('context/incidents/', ContextIncidentsView.as_view(), name='context_incidents'),
+    path('context/environment/', ContextEnvironmentView.as_view(), name='context_environment'),
 ]

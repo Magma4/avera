@@ -1,0 +1,48 @@
+- name: "NYC Transit Alerts"
+  slug: "nyc-transit"
+  type: "official_alerts"
+  connector: "rss"
+  url: "http://alert.mta.info/rss/alert.xml" # This is a placeholder/example URL for the prompt
+  enabled: true
+
+- name: "CNN Top Stories"
+  slug: "cnn-top"
+  type: "news_reports" # Temporary type for news
+  connector: "rss"
+  url: "http://rss.cnn.com/rss/cnn_topstories.rss"
+  enabled: true
+
+- name: "Global Disaster Alerts (GDACS)"
+  slug: "gdacs"
+  type: "official_alerts"
+  connector: "rss"
+  url: "https://www.gdacs.org/xml/rss.xml"
+  enabled: true
+
+- name: "NYC NYPD Complaint Data (YTD)"
+  slug: "nyc-nypd-ytd"
+  type: "crime_history"
+  connector: "csv"
+  url: "https://data.cityofnewyork.us/api/views/5uac-w243/rows.csv?accessType=DOWNLOAD"
+  enabled: true
+
+- name: "NYC Street Light Conditions"
+  slug: "nyc-street-light-conditions"
+  type: "environment"
+  connector: "csv"
+  # Using 311 Dataset (erm2-nwe9) filtered for "Street Light Out" via SODA API
+  url: "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?$limit=10000&complaint_type=Street%20Light%20Condition&descriptor=Street%20Light%20Out"
+  enabled: true
+
+- name: "NYC Subway Entrances"
+  slug: "nyc-subway-entrances"
+  type: "environment"
+  connector: "csv"
+  url: "https://data.ny.gov/resource/i9wp-a4ja.csv?$limit=5000"
+  enabled: true
+- name: "NY State Index Crimes (County Level)"
+  slug: "ny-state-index"
+  type: "crime_history"
+  connector: "csv"
+  url: "https://data.ny.gov/api/views/ca8h-8gjq/rows.csv?accessType=DOWNLOAD"
+  enabled: true
