@@ -13,3 +13,6 @@ pyyaml
 drf-spectacular
 pandas
 numpy
+osmnx
+networkx
+scikit-learn

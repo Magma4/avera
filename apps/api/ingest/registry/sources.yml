@@ -46,3 +46,593 @@
   connector: "csv"
   url: "https://data.ny.gov/api/views/ca8h-8gjq/rows.csv?accessType=DOWNLOAD"
   enabled: true
+
+# --- Nationwide Expansion ---
+- name: Official Alerts - AL
+  slug: us-al-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=AL
+  enabled: true
+- name: Crime Baseline - AL
+  slug: us-al-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - AK
+  slug: us-ak-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=AK
+  enabled: true
+- name: Crime Baseline - AK
+  slug: us-ak-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - AZ
+  slug: us-az-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=AZ
+  enabled: true
+- name: Crime Baseline - AZ
+  slug: us-az-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - AR
+  slug: us-ar-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=AR
+  enabled: true
+- name: Crime Baseline - AR
+  slug: us-ar-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - CA
+  slug: us-ca-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=CA
+  enabled: true
+- name: Crime Baseline - CA
+  slug: us-ca-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - CO
+  slug: us-co-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=CO
+  enabled: true
+- name: Crime Baseline - CO
+  slug: us-co-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - CT
+  slug: us-ct-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=CT
+  enabled: true
+- name: Crime Baseline - CT
+  slug: us-ct-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - DE
+  slug: us-de-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=DE
+  enabled: true
+- name: Crime Baseline - DE
+  slug: us-de-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - FL
+  slug: us-fl-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=FL
+  enabled: true
+- name: Crime Baseline - FL
+  slug: us-fl-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - GA
+  slug: us-ga-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=GA
+  enabled: true
+- name: Crime Baseline - GA
+  slug: us-ga-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - HI
+  slug: us-hi-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=HI
+  enabled: true
+- name: Crime Baseline - HI
+  slug: us-hi-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - ID
+  slug: us-id-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=ID
+  enabled: true
+- name: Crime Baseline - ID
+  slug: us-id-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - IL
+  slug: us-il-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=IL
+  enabled: true
+- name: Crime Baseline - IL
+  slug: us-il-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - IN
+  slug: us-in-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=IN
+  enabled: true
+- name: Crime Baseline - IN
+  slug: us-in-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - IA
+  slug: us-ia-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=IA
+  enabled: true
+- name: Crime Baseline - IA
+  slug: us-ia-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - KS
+  slug: us-ks-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=KS
+  enabled: true
+- name: Crime Baseline - KS
+  slug: us-ks-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - KY
+  slug: us-ky-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=KY
+  enabled: true
+- name: Crime Baseline - KY
+  slug: us-ky-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - LA
+  slug: us-la-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=LA
+  enabled: true
+- name: Crime Baseline - LA
+  slug: us-la-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - ME
+  slug: us-me-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=ME
+  enabled: true
+- name: Crime Baseline - ME
+  slug: us-me-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - MD
+  slug: us-md-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=MD
+  enabled: true
+- name: Crime Baseline - MD
+  slug: us-md-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - MA
+  slug: us-ma-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=MA
+  enabled: true
+- name: Crime Baseline - MA
+  slug: us-ma-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - MI
+  slug: us-mi-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=MI
+  enabled: true
+- name: Crime Baseline - MI
+  slug: us-mi-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - MN
+  slug: us-mn-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=MN
+  enabled: true
+- name: Crime Baseline - MN
+  slug: us-mn-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - MS
+  slug: us-ms-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=MS
+  enabled: true
+- name: Crime Baseline - MS
+  slug: us-ms-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - MO
+  slug: us-mo-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=MO
+  enabled: true
+- name: Crime Baseline - MO
+  slug: us-mo-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - MT
+  slug: us-mt-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=MT
+  enabled: true
+- name: Crime Baseline - MT
+  slug: us-mt-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - NE
+  slug: us-ne-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=NE
+  enabled: true
+- name: Crime Baseline - NE
+  slug: us-ne-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - NV
+  slug: us-nv-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=NV
+  enabled: true
+- name: Crime Baseline - NV
+  slug: us-nv-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - NH
+  slug: us-nh-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=NH
+  enabled: true
+- name: Crime Baseline - NH
+  slug: us-nh-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - NJ
+  slug: us-nj-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=NJ
+  enabled: true
+- name: Crime Baseline - NJ
+  slug: us-nj-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - NM
+  slug: us-nm-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=NM
+  enabled: true
+- name: Crime Baseline - NM
+  slug: us-nm-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - NC
+  slug: us-nc-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=NC
+  enabled: true
+- name: Crime Baseline - NC
+  slug: us-nc-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - ND
+  slug: us-nd-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=ND
+  enabled: true
+- name: Crime Baseline - ND
+  slug: us-nd-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - OH
+  slug: us-oh-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=OH
+  enabled: true
+- name: Crime Baseline - OH
+  slug: us-oh-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - OK
+  slug: us-ok-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=OK
+  enabled: true
+- name: Crime Baseline - OK
+  slug: us-ok-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - OR
+  slug: us-or-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=OR
+  enabled: true
+- name: Crime Baseline - OR
+  slug: us-or-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - PA
+  slug: us-pa-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=PA
+  enabled: true
+- name: Crime Baseline - PA
+  slug: us-pa-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - RI
+  slug: us-ri-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=RI
+  enabled: true
+- name: Crime Baseline - RI
+  slug: us-ri-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - SC
+  slug: us-sc-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=SC
+  enabled: true
+- name: Crime Baseline - SC
+  slug: us-sc-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - SD
+  slug: us-sd-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=SD
+  enabled: true
+- name: Crime Baseline - SD
+  slug: us-sd-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - TN
+  slug: us-tn-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=TN
+  enabled: true
+- name: Crime Baseline - TN
+  slug: us-tn-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - TX
+  slug: us-tx-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=TX
+  enabled: true
+- name: Crime Baseline - TX
+  slug: us-tx-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - UT
+  slug: us-ut-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=UT
+  enabled: true
+- name: Crime Baseline - UT
+  slug: us-ut-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - VT
+  slug: us-vt-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=VT
+  enabled: true
+- name: Crime Baseline - VT
+  slug: us-vt-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - VA
+  slug: us-va-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=VA
+  enabled: true
+- name: Crime Baseline - VA
+  slug: us-va-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - WA
+  slug: us-wa-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=WA
+  enabled: true
+- name: Crime Baseline - WA
+  slug: us-wa-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - WV
+  slug: us-wv-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=WV
+  enabled: true
+- name: Crime Baseline - WV
+  slug: us-wv-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - WI
+  slug: us-wi-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=WI
+  enabled: true
+- name: Crime Baseline - WI
+  slug: us-wi-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true
+- name: Official Alerts - WY
+  slug: us-wy-alerts
+  type: official_alerts
+  connector: nws
+  url: https://api.weather.gov/alerts/active?area=WY
+  enabled: true
+- name: Crime Baseline - WY
+  slug: us-wy-crime-baseline
+  type: crime_history
+  connector: federal_crime
+  url: federal://cde/baseline
+  enabled: true

@@ -23,16 +23,27 @@ class SafetySnapshotView(APIView):
         except (TypeError, ValueError):
             return Response({"error": "Invalid lat/lng"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Convert to H3
-        h3_id = point_to_h3(lat, lng)
+        # 1. Convert to H3 (Try Res 9 first - High Precision NYC)
+        h3_id = point_to_h3(lat, lng, resolution=9)
+        risk_obj = None
 
         # 2. Get Real Risk Score
         try:
             risk_obj = RiskScore.objects.filter(h3_id=h3_id).latest('updated_at')
+        except RiskScore.DoesNotExist:
+            # Fallback: Try Res 7 (National Baseline)
+            h3_id_r7 = point_to_h3(lat, lng, resolution=7)
+            try:
+                risk_obj = RiskScore.objects.filter(h3_id=h3_id_r7).latest('updated_at')
+                h3_id = h3_id_r7 # Update h3_id reference for alerts lookup below
+            except RiskScore.DoesNotExist:
+                pass
+
+        if risk_obj:
             score = risk_obj.score
             confidence = risk_obj.confidence
             reasons = risk_obj.reasons_json
-        except RiskScore.DoesNotExist:
+        else:
             score = -1
             confidence = "low"
             # Default reasons
@@ -159,7 +170,22 @@ class ContextIncidentsView(APIView):
         except (TypeError, ValueError):
             return Response({"error": "Invalid params"}, status=status.HTTP_400_BAD_REQUEST)
 
-        h3_id = point_to_h3(lat, lng)
+        # 1. Determine Resolution Strategy
+        # Try High Res (9) first - e.g. for NYC
+        h3_id = point_to_h3(lat, lng, resolution=9)
+
+        # Check if we have high-res data here
+        # Optimization: Just check if ANY incidents exist for this hex
+        if not IncidentNorm.objects.filter(h3_id=h3_id).exists():
+             # Fallback to Regional (7) - for Nationwide Baseline
+             h3_id_r7 = point_to_h3(lat, lng, resolution=7)
+             # If we have baseline data at Res 7, use that ID.
+             # If neither exists, it doesn't matter which empty ID we use, but let's stick to 7 if 9 failed?
+             # No, if nothing exists, we return empty anyway.
+             # But checking if r7 exists ensures we don't accidentally switch resolution if both are empty.
+             # Actually, if both are empty, it returns 0.
+             if IncidentNorm.objects.filter(h3_id=h3_id_r7).exists():
+                 h3_id = h3_id_r7
 
         # Date Filter
         start_date = timezone.now() - timezone.timedelta(days=days)
@@ -177,23 +203,51 @@ class ContextIncidentsView(APIView):
                     "pct": round((item['c'] / total_count) * 100, 1)
                 })
 
-        # 2. Trend (Weekly)
+        # 2. Trend (Weekly with Breakdown)
         from django.db.models.functions import TruncWeek
-        trend_data = []
+        from collections import defaultdict
+
+        trend_map = defaultdict(lambda: {"count": 0, "breakdown": defaultdict(int)})
+
         if total_count > 0:
-            date_stats = qs.annotate(week=TruncWeek('occurred_at')).values('week').annotate(c=Count('id')).order_by('week')
-            for item in date_stats:
+            # Group by Week AND Category
+            stats = qs.annotate(week=TruncWeek('occurred_at')) \
+                      .values('week', 'category') \
+                      .annotate(c=Count('id')) \
+                      .order_by('week')
+
+            for item in stats:
                 if item['week']:
-                     trend_data.append({
-                        "week": item['week'].date().isoformat(),
-                        "count": item['c']
-                    })
+                    w = item['week'].date().isoformat()
+                    c = item['c']
+                    cat = item['category']
+
+                    trend_map[w]["count"] += c
+                    trend_map[w]["breakdown"][cat] += c
+
+        # Flatten for response
+        trend_data = []
+        for week in sorted(trend_map.keys()):
+            trend_data.append({
+                "week": week,
+                "count": trend_map[week]["count"],
+                "breakdown": dict(trend_map[week]["breakdown"])
+            })
 
         # 3. Meta
+        # Determine coverage label based on sources present
+        # In a real app we'd distinct('source__type') but let's check slug conventions
+        coverage_label = "Municipal Data (High)"
+        if total_count > 0:
+            # Check if any result is from a baseline source
+            is_baseline = qs.filter(source__slug__contains='baseline').exists()
+            if is_baseline:
+                coverage_label = "Federal Aggregates (Baseline)"
+
         meta = {
             "radius": "H3 L9 (~0.1km²)",
             "total": total_count,
-            "coverage": "Municipal Data (High)" # Placeholder for real coverage logic
+            "coverage": coverage_label
         }
 
         return Response({
@@ -279,3 +333,67 @@ class ContextEnvironmentView(APIView):
         }
 
         return Response(data)
+
+class ContextAlertsView(APIView):
+    """
+    Returns list of official alerts for the 'Alerts' dashboard tab.
+    """
+    def get(self, request):
+        try:
+            lat = float(request.query_params.get("lat"))
+            lng = float(request.query_params.get("lng"))
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid params"}, status=status.HTTP_400_BAD_REQUEST)
+
+        h3_id = point_to_h3(lat, lng)
+
+        # Get alerts with spatial radius (k=5 ~ 2.5km radius at Res 9)
+        import h3
+        neighbor_ids = h3.grid_disk(h3_id, 5)
+
+        alerts = AlertItem.objects.filter(h3_id__in=neighbor_ids).select_related('source').order_by('-published_at')
+
+        data = []
+        for a in alerts:
+            data.append({
+                "id": a.id,
+                "title": a.title,
+                "summary": a.summary,
+                "category": a.category,     # e.g. "transit", "weather", "safety"
+                "severity": a.severity,
+                "source": a.source.name,    # Credible source name
+                "source_type": a.source.type,
+                "published_at": a.published_at.isoformat(),
+                "url": a.url
+            })
+
+        return Response({
+            "alerts": data,
+            "meta": {
+                "count": len(data),
+                "disclaimer": "Alerts from verified municipal agencies."
+            }
+        })
+class SafetyRouteView(APIView):
+    """
+    Calculates a route prioritizing safety context.
+    POST body: { start_lat, start_lng, end_lat, end_lng }
+    """
+    def post(self, request):
+        print(f"DEBUG: SafetyRouteView POST received. Data: {request.data}", flush=True)
+        try:
+            start_lat = float(request.data.get("start_lat"))
+            start_lng = float(request.data.get("start_lng"))
+            end_lat = float(request.data.get("end_lat"))
+            end_lng = float(request.data.get("end_lng"))
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
+
+        from .services.routing import RoutingService
+        service = RoutingService()
+        result = service.calculate_safer_route(start_lat, start_lng, end_lat, end_lng)
+
+        if not result:
+            return Response({"error": "Could not find a route"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(result)

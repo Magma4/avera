@@ -20,18 +20,32 @@ def ingest_source(source_slug):
 
     try:
         # Determine connector class
-        if source.slug == 'nyc-transit': # or check registry/type
+        # Determine connector class
+        connector_type = getattr(source, 'connector', '').lower()
+
+        if connector_type == 'nws' or source.slug.endswith('-alerts'):
+            from .connectors.nws_connector import NWSConnector
+            connector = NWSConnector(source)
+            count = connector.run()
+
+        elif connector_type == 'federal_crime' or 'crime-baseline' in source.slug:
+            from .connectors.federal_crime_connector import FederalCrimeConnector
+            connector = FederalCrimeConnector(source)
+            count = connector.run()
+
+        elif connector_type == 'rss' or source.slug == 'nyc-transit':
              connector = RSSConnector(source)
              count = connector.run()
-             count = connector.run()
-        elif source.slug in ['nyc-nypd-ytd', 'nyc-street-light-conditions', 'nyc-subway-entrances', 'ny-state-index']:
+
+        elif connector_type == 'csv' or source.slug in ['nyc-nypd-ytd', 'nyc-street-light-conditions', 'nyc-subway-entrances', 'ny-state-index']:
             from .connectors.csv_connector import CSVConnector
             connector = CSVConnector(source)
             count = connector.run()
+
         else:
             # Fallback or generic logic if we add more
             # For now just log
-            logger.warning(f"No connector mapped for {source.slug}")
+            logger.warning(f"No connector mapped for {source.slug} (type: {connector_type})")
             count = 0
 
         # Update run status
