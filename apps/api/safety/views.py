@@ -9,6 +9,8 @@ from geo.utils import point_to_h3
 from django.db.models import Count
 from ingest.models import AlertItem, IncidentNorm
 from safety.models import RiskScore
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 import json
 
 class SafetySnapshotView(APIView):
@@ -16,6 +18,7 @@ class SafetySnapshotView(APIView):
         responses=SafetySnapshotSerializer,
         description="Get safety snapshot for a location"
     )
+    @method_decorator(cache_page(60 * 15))
     def get(self, request):
         try:
             lat = float(request.query_params.get("lat"))
@@ -162,6 +165,7 @@ class ContextIncidentsView(APIView):
     - Mix: Category breakdown
     - Trend: Weekly counts
     """
+    @method_decorator(cache_page(60 * 15))
     def get(self, request):
         try:
             lat = float(request.query_params.get("lat"))
@@ -261,6 +265,7 @@ class ContextEnvironmentView(APIView):
     Returns environmental context (Satellite derived).
     Includes: PM2.5, Haze/Smoke, Night Activity.
     """
+    @method_decorator(cache_page(60 * 15))
     def get(self, request):
         try:
             lat = float(request.query_params.get("lat"))
@@ -338,6 +343,7 @@ class ContextAlertsView(APIView):
     """
     Returns list of official alerts for the 'Alerts' dashboard tab.
     """
+    @method_decorator(cache_page(60 * 15))
     def get(self, request):
         try:
             lat = float(request.query_params.get("lat"))

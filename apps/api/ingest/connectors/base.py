@@ -25,35 +25,61 @@ class BaseConnector(ABC):
         try:
             raw_data = self.fetch()
             items = self.parse(raw_data)
-            count = 0
+
+            # Prepare AlertItem instances
+            instances_to_create = []
             for item in items:
-                if self.save_item(item):
-                    count += 1
-            return count
+                instance = self.prepare_item(item)
+                if instance:
+                    instances_to_create.append(instance)
+
+            if not instances_to_create:
+                return 0
+
+            # Bulk insert (ignore_conflicts=True handles uniqueness constraints naturally assuming DB unique_together is correct)
+            # If DB doesn't have unique constraints, we can do programmatic deduplication.
+            # However, for speed, assuming programmatic deduplication first.
+
+            # Extract keys for deduplication
+            seen_keys = set()
+            unique_instances = []
+            for inst in instances_to_create:
+                # Use title and published_at as a proxy for deduplication key
+                key = (inst.title, inst.published_at)
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    unique_instances.append(inst)
+
+            # Check DB for existing records in one query
+            titles = [i.title for i in unique_instances]
+            dates = [i.published_at for i in unique_instances]
+
+            existing_records = set(
+                AlertItem.objects.filter(
+                    source=self.source,
+                    title__in=titles,
+                    published_at__in=dates
+                ).values_list('title', 'published_at')
+            )
+
+            # Filter out records already in DB
+            new_instances = [
+                inst for inst in unique_instances
+                if (inst.title, inst.published_at) not in existing_records
+            ]
+
+            if new_instances:
+                AlertItem.objects.bulk_create(new_instances, batch_size=500, ignore_conflicts=True)
+
+            return len(new_instances)
         except Exception as e:
             logger.error(f"Error ingesting {self.source.name}: {e}")
             raise e
 
-    def save_item(self, item_data: Dict[str, Any]) -> bool:
-        """Save a parsed item to the DB, creating if not exists based on source+h3+time or other unique key."""
-        # For AlertItems, uniqueness logic depends on the source.
-        # This generic saver assumes 'h3_id' and 'published_at' are key, but
-        # usually we want a unique ID from the feed (e.g. guid).
-        # For this step, we'll keep it simple: dedupe by duplicate fields if possible
-        # or just create. A real impl would check a unique ID.
-
-        # Dedupe check (simple):
-        exists = AlertItem.objects.filter(
-            source=self.source,
-            title=item_data.get('title'),
-            published_at=item_data.get('published_at')
-        ).exists()
-
-        if exists:
-            return False
-
-        AlertItem.objects.create(
-            source=self.source,
-            **item_data
-        )
-        return True
+    def prepare_item(self, item_data: Dict[str, Any]) -> AlertItem:
+        """Prepare an AlertItem instance from data without saving it."""
+        try:
+            return AlertItem(source=self.source, **item_data)
+        except Exception as e:
+            logger.error(f"Failed to prepare item: {e}")
+            return None

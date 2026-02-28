@@ -21,11 +21,16 @@ class RoutingService:
     def get_graph_for_area(self, north, south, east, west):
         """Fetch walking graph for the bounding box."""
         # Add buffer to ensure we cover edge cases
-        return ox.graph_from_bbox(
-            bbox=(north + 0.01, south - 0.01, east + 0.01, west - 0.01),
-            network_type='walk',
-            simplify=True
-        )
+        # OSMnx v2.0+ uses bbox=(west, south, east, north) or bbox=(north, south, east, west)?
+        # To be safe against v1/v2 mismatches, let's just use graph_from_polygon or map accordingly.
+        # But wait, looking at the error `39,154 times your configured Overpass max query area size`...
+        # It means we accidentally swapped Latitude and Longitude. North/South is ~40. East/West is ~-74.
+        try:
+            # OSMnx < 2.0 uses (north, south, east, west)
+            return ox.graph_from_bbox(north + 0.01, south - 0.01, east + 0.01, west - 0.01, network_type='walk', simplify=True)
+        except TypeError:
+            # OSMnx >= 2.0 uses bbox=(west, south, east, north) or bbox=(left, bottom, right, top)
+            return ox.graph_from_bbox(bbox=(west - 0.01, south - 0.01, east + 0.01, north + 0.01), network_type='walk', simplify=True)
 
     def calculate_safer_route(self, start_lat, start_lng, end_lat, end_lng):
         """
@@ -80,80 +85,66 @@ class RoutingService:
             # Get H3 cells for the bbox bounds?
             # Actually, let's just create a set of H3 tokens for every edge midpoint.
 
-            # Optimization: Pre-fetch all RiskScores in the BBox if feasible.
-            # For now, let's just iterate edges. It might be slow but it's MVP.
-
-            # Better: Get all RiskScore objects for resolution 9 in the bbox area?
-            # H3 doesn't support bbox query natively easily without polyfill.
-            # Let's simple check midpoint of edge.
-
-            # Cache of H3 scores
-            h3_score_cache = {}
-
+            # Optimization: Pre-fetch all RiskScores in the BBox to avoid N+1 queries.
+            # Get all H3 IDs in the graph first
+            required_h3s = set()
             for u, v, k, data in G.edges(keys=True, data=True):
-                # Calculate edge midpoint
-                # If geometry exists, use it. Else average u, v.
-                if 'geometry' in data:
-                    # Shapely geom
-                    # Centroid is easy
-                    midpoint = data['geometry'].centroid
-                    lat, lng = midpoint.y, midpoint.x
-                else:
-                    node_u = G.nodes[u]
-                    node_v = G.nodes[v]
-                    lat = (node_u['y'] + node_v['y']) / 2
-                    lng = (node_u['x'] + node_v['x']) / 2
+                 if 'geometry' in data:
+                     midpoint = data['geometry'].centroid
+                     lat, lng = midpoint.y, midpoint.x
+                 else:
+                     node_u = G.nodes[u]
+                     node_v = G.nodes[v]
+                     lat = (node_u['y'] + node_v['y']) / 2
+                     lng = (node_u['x'] + node_v['x']) / 2
 
-                # Get H3 index (v4 API)
-                try:
-                    h3_index = h3.latlng_to_cell(lat, lng, 9)
-                except AttributeError:
-                     # Fallback for older h3-py versions
-                    h3_index = h3.geo_to_h3(lat, lng, 9) # Use res 9 for street level granularity
+                 try:
+                     h3_index = h3.latlng_to_cell(lat, lng, 9)
+                 except AttributeError:
+                     h3_index = h3.geo_to_h3(lat, lng, 9)
 
-                # Lookup Score
-                if h3_index not in h3_score_cache:
-                    # Inefficient N+1 query. FIXME: Bulk load later.
-                    try:
-                        rs = RiskScore.objects.filter(h3_index=h3_index).first()
-                        score = rs.score if rs else 10 # Default to low risk if unknown
-                    except Exception:
-                        score = 10
-                    h3_score_cache[h3_index] = score
+                 required_h3s.add(h3_index)
+                 # Tag edge with h3 to avoid re-calculating later
+                 data['h3_id'] = h3_index
 
-                risk_score = h3_score_cache[h3_index]
+            # Bulk Fetch Risk Scores limit to Day/Night as well if needed (hardcoding latest for MVP)
+            h3_score_cache = {}
+            for rs_dict in RiskScore.objects.filter(h3_id__in=required_h3s).values('h3_id', 'score'):
+                # Handle possible multiple time buckets by just taking arbitrary score for now
+                if rs_dict['h3_id'] not in h3_score_cache:
+                    h3_score_cache[rs_dict['h3_id']] = rs_dict['score']
+
+             # Set Weights
+            for u, v, k, data in G.edges(keys=True, data=True):
+                h3_index = data.get('h3_id')
+                risk_score = h3_score_cache.get(h3_index, 10) # 10 is low risk
 
                 # Calculate Cost
                 length = data.get('length', 10) # meters
-
-                # Cost Function
-                # safety_cost = length * (1 + (risk/100 * alpha))
-                # If risk=0, cost=length.
-                # If risk=100, cost=length * (1 + 5) = 6 * length
                 risk_multiplier = 1 + (risk_score / 100.0) * alpha
                 data['safety_weight'] = length * risk_multiplier
                 data['risk_score'] = risk_score # for debug
 
             # 4. Run A* Shortest Path
-            route = nx.shortest_path(G, orig_node, dest_node, weight='safety_weight')
+            try:
+                route = nx.shortest_path(G, orig_node, dest_node, weight='safety_weight')
+            except nx.NetworkXNoPath:
+                print("DEBUG: No path exists between orig and dest", flush=True)
+                return None
 
             # 5. Extract Geometry
-            # route_nodes is list of node IDs
             route_coords = []
             for node_id in route:
                 node = G.nodes[node_id]
                 route_coords.append([node['x'], node['y']]) # GeoJSON is [lng, lat]
 
             # 6. Calculate Stats
-            total_dist = sum(nx.utils.pairwise(route)) # wait, need lengths
-            # calculate total physical length
             real_length = 0
             total_risk_accum = 0
+
+            # Use zip instead of broken nx.utils.pairwise
             for u, v in zip(route[:-1], route[1:]):
-                # get edge data
-                # MultiDiGraph, so there might be multiple edges. Get the one with min safety_weight
                 edge_data = G.get_edge_data(u, v)
-                # edge_data is a dict of key->data. Find the one with min safety_weight
                 best_key = min(edge_data, key=lambda k: edge_data[k]['safety_weight'])
                 data = edge_data[best_key]
                 real_length += data.get('length', 0)

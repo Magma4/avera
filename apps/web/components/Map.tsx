@@ -33,9 +33,9 @@ export default function MapComponent({ onLocationSelect }: MapComponentProps) {
     const [viewState, setViewState] = React.useState<ViewState>({
         latitude: 37.7749,
         longitude: -122.4194,
-        zoom: 12,
-        bearing: 0,
-        pitch: 0,
+        zoom: 13, // Slight zoom in for 3D effect
+        bearing: -17.6,
+        pitch: 60, // Aggressive pitch for 3D
         padding: { top: 0, bottom: 0, left: 0, right: 0 }
     });
 
@@ -88,10 +88,9 @@ export default function MapComponent({ onLocationSelect }: MapComponentProps) {
             }
         } catch (e) {
             console.error(e);
-            // Only alert if we actually tried and failed, not just debounce
-            // But we can't easily distinguish. Let's suppress verbose alerts for now or use toast?
-            // Users hate popups.
-            // alert("Could not calculate a safer route in this area. Try closer points (< 5km).");
+            setRoutePath(null);
+            setRouteExplanation(null);
+            alert("Could not calculate a safer route in this area. Try closer points (< 5km).");
         } finally {
             setIsCalculating(false);
         }
@@ -324,7 +323,7 @@ export default function MapComponent({ onLocationSelect }: MapComponentProps) {
                 onMove={evt => {
                     setViewState(evt.viewState);
                     if (evt.target) {
-                        setMapBounds(evt.target.getBounds().toArray().flat());
+                        setMapBounds(evt.target.getBounds()?.toArray().flat() || null);
                     }
                 }}
                 onLoad={onMapLoad}
@@ -479,23 +478,56 @@ export default function MapComponent({ onLocationSelect }: MapComponentProps) {
                                 "interpolate",
                                 ["linear"],
                                 ["get", "score"],
-                                0, "rgba(190, 18, 60, 0.35)",
-                                50, "rgba(217, 119, 6, 0.3)",
-                                100, "rgba(21, 128, 61, 0.25)"
+                                // Neon Colors for Dark Mode feel
+                                0, "#ff003c", // Neon Red/Pink
+                                50, "#ff9d00", // Neon Orange
+                                100, "#00ff88" // Neon Green
                             ],
                             // Zoom-dependent opacity: faded at low zoom, distinct at high zoom
                             "fill-opacity": [
                                 "interpolate",
                                 ["linear"],
                                 ["zoom"],
-                                5, 0.2, // Country level: very faint
-                                10, 0.5, // Metro level: visible
-                                14, 0.7  // Street level: clear
+                                5, 0.1, // Country level: very faint
+                                10, 0.3, // Metro level: visible
+                                14, 0.4  // Street level: clear
                             ],
                             "fill-outline-color": "rgba(255,255,255,0.05)"
                         }}
                     />
                 </Source>
+
+                {/* 3D Building Layer */}
+                <Layer
+                    id="3d-buildings"
+                    source="composite"
+                    source-layer="building"
+                    filter={["==", "extrude", "true"]}
+                    type="fill-extrusion"
+                    minzoom={15}
+                    paint={{
+                        "fill-extrusion-color": theme === 'dark' ? "#1f2937" : "#aaa",
+                        "fill-extrusion-height": [
+                            "interpolate",
+                            ["linear"],
+                            ["zoom"],
+                            15,
+                            0,
+                            15.05,
+                            ["get", "height"]
+                        ],
+                        "fill-extrusion-base": [
+                            "interpolate",
+                            ["linear"],
+                            ["zoom"],
+                            15,
+                            0,
+                            15.05,
+                            ["get", "min_height"]
+                        ],
+                        "fill-extrusion-opacity": 0.6
+                    }}
+                />
 
                 {hoverInfo && (
                     <div className="absolute z-10 pointers-events-none bg-white/90 backdrop-blur px-3 py-2 rounded shadow-lg border border-gray-100 text-xs text-gray-700 transform -translate-x-1/2 -translate-y-[120%]" style={{ left: hoverInfo.x, top: hoverInfo.y }}>

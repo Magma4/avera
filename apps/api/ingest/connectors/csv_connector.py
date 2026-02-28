@@ -34,15 +34,14 @@ class CSVConnector(BaseConnector):
             is_env = self.source.type == 'environment'
 
             if is_crime and self.source.slug == 'nyc-nypd-ytd':
-                # 'CMPLNT_FR_DT' input format is MM/DD/YYYY, 'CMPLNT_FR_TM' is HH:MM:SS
-                # Pandas parse_dates with list of lists combines them column-wise
-                date_col_args = {'parse_dates': {'occurred_at': ['CMPLNT_FR_DT', 'CMPLNT_FR_TM']}, 'keep_date_col': True}
+                # Pandas 2.0+ parse_dates dict structure
+                date_col_args = {'parse_dates': ['CMPLNT_FR_DT']}
             elif is_env and 'light' in self.source.slug:
-                date_col_args = {'parse_dates': ['Created Date']}
+                date_col_args = {'parse_dates': ['created_date']}
 
             # ny-state-index doesn't need parse_dates at read time (Year column is int)
 
-            for chunk in pd.read_csv(local_csv_path, chunksize=CHUNK_SIZE, **date_col_args, on_bad_lines='skip'):
+            for chunk in pd.read_csv(local_csv_path, chunksize=CHUNK_SIZE, **date_col_args, on_bad_lines='skip', low_memory=False):
                 for _, row in chunk.iterrows():
                     try:
                         # Special logic for NY State Aggregated Data (No Lat/Lng in source)
@@ -152,8 +151,8 @@ class CSVConnector(BaseConnector):
                              continue
 
                         # Standard Flow (NYPD / Lights)
-                        lat = row.get('Latitude')
-                        lng = row.get('Longitude')
+                        lat = row.get('latitude')
+                        lng = row.get('longitude')
 
                         # Fix: Check for NaN and Invalid Bounds (NYC Box)
                         # NYC is roughly Lat 40..41, Lng -74..-73
@@ -171,14 +170,17 @@ class CSVConnector(BaseConnector):
 
                         if is_crime:
                             # Normalize Crime
-                            raw_category = str(row.get('OFNS_DESC', '')).strip()
+                            raw_category = str(row.get('ofns_desc', '')).strip()
                             norm_data = normalize_incident(raw_category, 'nyc_nypd')
                             if not norm_data:
                                 continue
 
-                            occ = row.get('occurred_at')
+                            occ = row.get('CMPLNT_FR_DT')
                             if pd.isna(occ):
                                 continue
+
+                            if timezone.is_naive(occ):
+                                occ = timezone.make_aware(occ, timezone.utc)
 
                             self.save_item(
                                 model='incident',
@@ -193,9 +195,11 @@ class CSVConnector(BaseConnector):
 
                         elif is_env:
                              # Env Logic
-                             created = row.get('Created Date')
+                             created = row.get('created_date')
                              if pd.isna(created):
                                  created = timezone.now()
+                             elif timezone.is_naive(created):
+                                 created = timezone.make_aware(created, timezone.utc)
 
                              self.save_item(
                                  model='env',

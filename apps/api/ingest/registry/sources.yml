@@ -636,3 +636,18 @@
   connector: federal_crime
   url: federal://cde/baseline
   enabled: true
+
+# === Enterprise Data Sources ===
+- name: "EPA AirNow - Air Quality"
+  slug: "epa-airnow"
+  type: "environment"
+  connector: "airnow"
+  url: "https://www.airnowapi.org/aq/observation/latLong/current/"
+  enabled: true
+
+- name: "USGS Earthquakes - Last 24h"
+  slug: "usgs-earthquakes"
+  type: "official_alerts"
+  connector: "usgs"
+  url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"
+  enabled: true

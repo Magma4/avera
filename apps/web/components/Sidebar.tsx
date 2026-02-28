@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SidebarProps {
     lat: number | null;
@@ -57,9 +58,9 @@ export default function Sidebar({ lat, lng }: SidebarProps) {
     }
 
     return (
-        <div className="h-full overflow-hidden bg-white dark:bg-gray-950 border-l border-gray-200 dark:border-gray-800 shadow-xl flex flex-col w-[400px]">
+        <div className="h-full overflow-hidden bg-white/80 dark:bg-black/60 backdrop-blur-xl border-l border-white/20 dark:border-white/5 shadow-2xl flex flex-col w-[400px]">
             {/* Header / Address Bar */}
-            <div className="bg-gray-900 dark:bg-black px-4 py-3 flex items-start justify-between shadow-sm z-10 shrink-0">
+            <div className="bg-gray-900/90 dark:bg-black/80 backdrop-blur-md px-4 py-3 flex items-start justify-between shadow-sm z-10 shrink-0 border-b border-white/10">
                 <div className="flex items-start space-x-3">
                     <MapPin className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
                     <div>
@@ -77,7 +78,7 @@ export default function Sidebar({ lat, lng }: SidebarProps) {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex items-center border-b border-gray-100 dark:border-gray-800 px-2 pt-2 bg-gray-50/50 dark:bg-gray-900/50 shrink-0">
+            <div className="flex items-center border-b border-gray-200/50 dark:border-white/10 px-2 pt-2 bg-gray-50/30 dark:bg-white/5 backdrop-blur-sm shrink-0">
                 <TabButton id="overview" label="Snapshot" icon={LayoutDashboard} active={activeTab} onClick={setActiveTab} />
                 <TabButton id="incidents" label="Incidents" icon={Shield} active={activeTab} onClick={setActiveTab} />
                 <TabButton id="alerts" label="Alerts" icon={AlertTriangle} active={activeTab} onClick={setActiveTab} />
@@ -87,11 +88,22 @@ export default function Sidebar({ lat, lng }: SidebarProps) {
 
             {/* Content Area */}
             <div className="flex-1 overflow-y-auto relative">
-                {activeTab === 'overview' && <OverviewView lat={lat} lng={lng} setActiveTab={setActiveTab} />}
-                {activeTab === 'incidents' && <IncidentsView lat={lat} lng={lng} />}
-                {activeTab === 'environment' && <EnvironmentView lat={lat} lng={lng} />}
-                {activeTab === 'alerts' && <AlertsView lat={lat} lng={lng} />}
-                {activeTab === 'trends' && <TrendsView lat={lat} lng={lng} />}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, y: -10, filter: "blur(4px)" }}
+                        transition={{ duration: 0.2 }}
+                        className="h-full"
+                    >
+                        {activeTab === 'overview' && <OverviewView lat={lat} lng={lng} setActiveTab={setActiveTab} />}
+                        {activeTab === 'incidents' && <IncidentsView lat={lat} lng={lng} />}
+                        {activeTab === 'environment' && <EnvironmentView lat={lat} lng={lng} />}
+                        {activeTab === 'alerts' && <AlertsView lat={lat} lng={lng} />}
+                        {activeTab === 'trends' && <TrendsView lat={lat} lng={lng} />}
+                    </motion.div>
+                </AnimatePresence>
             </div>
         </div>
     );
@@ -104,9 +116,9 @@ function TabButton({ id, label, icon: Icon, active, onClick }: { id: TabId, labe
     return (
         <button
             onClick={() => onClick(id)}
-            className={`flex flex-col items-center justify-center flex-1 py-3 px-1 transition-all duration-200 border-b-2 ${isActive
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-950'
-                : 'border-transparent text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-800'
+            className={`flex flex-col items-center justify-center flex-1 py-3 px-1 transition-all duration-300 border-b-2 ${isActive
+                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-white/50 dark:bg-white/10 backdrop-blur-md'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-white/30 dark:hover:bg-white/5'
                 }`}
         >
             <Icon className={`w-4 h-4 mb-1 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
@@ -118,11 +130,13 @@ function TabButton({ id, label, icon: Icon, active, onClick }: { id: TabId, labe
 function OverviewView({ lat, lng, setActiveTab }: { lat: number, lng: number, setActiveTab: (id: TabId) => void }) {
     const { data, error, isLoading } = useSWR(
         `${process.env.NEXT_PUBLIC_API_URL}/safety/snapshot/?lat=${lat}&lng=${lng}&time=day`,
-        fetcher
+        fetcher,
+        { keepPreviousData: true, revalidateOnFocus: false, revalidateOnReconnect: false }
     );
 
     if (isLoading) return <LoadingState />;
-    if (error || !data) return <ErrorState />;
+    if (error) return <ErrorState error={error} />;
+    if (!data) return <ErrorState error={new Error("No data returned")} />;
 
     const { score, confidence, reasons, evidence } = data;
 
@@ -152,16 +166,16 @@ function OverviewView({ lat, lng, setActiveTab }: { lat: number, lng: number, se
     return (
         <div className="animate-in fade-in duration-300 pb-10">
             {/* Header */}
-            <div className={`p-6 border-b border-gray-100 dark:border-gray-800 ${config.bg}`}>
+            <div className={`p-6 border-b border-white/5 bg-gradient-to-br from-white/10 to-transparent dark:from-white/5 dark:to-transparent backdrop-blur-md`}>
                 <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Safety Intelligence Snapshot</h2>
                 <div className="flex items-baseline space-x-3">
-                    <span className={`text-5xl font-bold tracking-tight ${config.color} tabular-nums`}>
+                    <span className={`text-5xl font-bold tracking-tight ${config.color} tabular-nums drop-shadow-md`}>
                         {score < 0 ? "--" : score}
                     </span>
                     {score >= 0 && <span className="text-sm font-medium text-gray-500 dark:text-gray-400">/ 100</span>}
                 </div>
                 <div className="mt-4 flex items-center space-x-2">
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${config.border} ${config.color} bg-white/50 dark:bg-black/20 backdrop-blur`}>
+                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${config.border} ${config.color} bg-white/20 dark:bg-black/40 backdrop-blur-xl shadow-inner`}>
                         {config.label}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400">Confidence: <strong className="text-gray-700 dark:text-gray-200 capitalize">{confidence}</strong></span>
@@ -212,8 +226,8 @@ function OverviewView({ lat, lng, setActiveTab }: { lat: number, lng: number, se
             </div>
 
             {/* Analysis */}
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-5 flex items-center"><Shield className="w-4 h-4 mr-2 text-gray-400" />Contextual Analysis</h3>
+            <div className="p-6 border-b border-white/5 bg-white/40 dark:bg-black/40 backdrop-blur-md">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-5 flex items-center drop-shadow-sm"><Shield className="w-4 h-4 mr-2 text-indigo-400" />Contextual Analysis</h3>
                 <div className="space-y-6">
                     {reasons.map((reason: any, idx: number) => (
                         <div key={idx} className="relative pl-4 border-l-2 border-gray-100 dark:border-gray-800">
@@ -240,7 +254,7 @@ function OverviewView({ lat, lng, setActiveTab }: { lat: number, lng: number, se
             </div>
 
             {/* Evidence Layers Summary */}
-            <div className="p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+            <div className="p-6 bg-gray-50/50 dark:bg-black/50 backdrop-blur-sm border-t border-white/5">
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Evidence Layers</h3>
                 <div className="grid gap-2">
                     <EvidencePill icon={AlertTriangle} label="Official Alerts" type="LIVE_OFFICIAL" color="text-amber-500" date={evidence.alerts.last_updated} />
@@ -254,7 +268,11 @@ function OverviewView({ lat, lng, setActiveTab }: { lat: number, lng: number, se
 
 function IncidentsView({ lat, lng }: { lat: number, lng: number }) {
     const [days, setDays] = useState(90);
-    const { data, isLoading } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/safety/context/incidents/?lat=${lat}&lng=${lng}&days=${days}`, fetcher);
+    const { data, isLoading } = useSWR(
+        `${process.env.NEXT_PUBLIC_API_URL}/safety/context/incidents/?lat=${lat}&lng=${lng}&days=${days}`,
+        fetcher,
+        { keepPreviousData: true, revalidateOnFocus: false, revalidateOnReconnect: false }
+    );
 
     if (isLoading || !data) return <LoadingState />;
     const { mix, trend, meta } = data;
@@ -262,8 +280,8 @@ function IncidentsView({ lat, lng }: { lat: number, lng: number }) {
 
     return (
         <div className="animate-in fade-in duration-300 pb-10">
-            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50">
-                <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200">Historical Context</h3>
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/30 dark:bg-black/40 backdrop-blur-md">
+                <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200 drop-shadow-sm">Historical Context</h3>
                 <div className="flex space-x-1">
                     {[90, 180, 365].map(d => (
                         <button key={d} onClick={() => setDays(d)} className={`px-2 py-1 text-[10px] rounded border ${days === d ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm text-gray-800 dark:text-gray-100 font-medium' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
@@ -272,10 +290,10 @@ function IncidentsView({ lat, lng }: { lat: number, lng: number }) {
                     ))}
                 </div>
             </div>
-            <div className="px-6 py-3 bg-amber-50/50 dark:bg-amber-950/20 border-b border-amber-100/50 dark:border-amber-900/30 text-[10px] text-amber-800/70 dark:text-amber-400/80 leading-tight">
+            <div className="px-6 py-3 bg-amber-500/10 border-b border-amber-500/20 text-[10px] text-amber-800 dark:text-amber-400 leading-tight backdrop-blur-sm">
                 <strong>Analysis Layer:</strong> Aggregated historical incident context — not live incidents.
             </div>
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800">
+            <div className="p-6 border-b border-white/5">
                 <div className="flex items-center justify-between mb-4">
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Activity Trend (Weekly)</h4>
                     <span className="text-[10px] text-gray-400 tabular-nums">Total: {meta.total}</span>
@@ -289,7 +307,15 @@ function IncidentsView({ lat, lng }: { lat: number, lng: number }) {
             </div>
             <div className="p-6">
                 <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Incident Mix</h4>
-                <div className="space-y-4">
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                    }}
+                    className="space-y-4"
+                >
                     {mix.map((m: any, idx: number) => {
                         const labels: Record<string, string> = {
                             'aggregated_index_crime': 'Serious Crimes (Aggregated)',
@@ -302,23 +328,29 @@ function IncidentsView({ lat, lng }: { lat: number, lng: number }) {
                         const label = labels[m.category] || m.category.toLowerCase().replace(/_/g, ' ');
 
                         return (
-                            <div key={idx}>
+                            <motion.div
+                                key={idx}
+                                variants={{
+                                    hidden: { opacity: 0, x: -10 },
+                                    visible: { opacity: 1, x: 0 }
+                                }}
+                            >
                                 <div className="flex justify-between text-xs mb-1">
                                     <div className="flex flex-col">
-                                        <span className="font-medium text-gray-600 capitalize">{label}</span>
+                                        <span className="font-medium text-gray-600 dark:text-gray-300 capitalize">{label}</span>
                                         {m.category === 'aggregated_index_crime' && (
                                             <span className="text-[9px] text-gray-400 font-normal leading-tight mt-0.5 max-w-[200px]">
                                                 (Murder, Rape, Robbery, Assault, Burglary, Larceny, MV Theft)
                                             </span>
                                         )}
                                     </div>
-                                    <span className="text-gray-400">{m.pct}%</span>
+                                    <span className="text-gray-400 dark:text-gray-500 font-bold">{m.pct}%</span>
                                 </div>
-                                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden"><div style={{ width: `${m.pct}%` }} className="h-full bg-slate-500 rounded-full" /></div>
-                            </div>
+                                <div className="h-2 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden shadow-inner"><motion.div initial={{ width: 0 }} animate={{ width: `${m.pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }} className="h-full bg-indigo-500/80 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]" /></div>
+                            </motion.div>
                         )
                     })}
-                </div>
+                </motion.div>
             </div>
         </div>
     );
@@ -326,59 +358,78 @@ function IncidentsView({ lat, lng }: { lat: number, lng: number }) {
 
 function EnvironmentView({ lat, lng }: { lat: number, lng: number }) {
     const [days, setDays] = useState(7); // Toggle 7d vs 24h
-    const { data, isLoading } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/safety/context/environment/?lat=${lat}&lng=${lng}&days=${days}`, fetcher);
+    const { data, isLoading } = useSWR(
+        `${process.env.NEXT_PUBLIC_API_URL}/safety/context/environment/?lat=${lat}&lng=${lng}&days=${days}`,
+        fetcher,
+        { keepPreviousData: true, revalidateOnFocus: false, revalidateOnReconnect: false }
+    );
 
     if (isLoading || !data) return <LoadingState />;
     const { metrics, trend, meta } = data;
 
     return (
         <div className="animate-in fade-in duration-300 pb-10">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                <h3 className="text-xs font-semibold text-gray-700">Environmental Context</h3>
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/30 dark:bg-black/40 backdrop-blur-md">
+                <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-200 drop-shadow-sm">Environmental Context</h3>
                 <div className="flex space-x-1">
                     {[1, 7].map(d => (
-                        <button key={d} onClick={() => setDays(d)} className={`px-2 py-1 text-[10px] rounded border ${days === d ? 'bg-white border-gray-200 shadow-sm text-gray-800 font-medium' : 'border-transparent text-gray-400 hover:text-gray-600'}`}>
+                        <button key={d} onClick={() => setDays(d)} className={`px-2 py-1 text-[10px] rounded border ${days === d ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm text-gray-800 dark:text-gray-100 font-medium' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
                             {d === 1 ? '24H' : '7D'}
                         </button>
                     ))}
                 </div>
             </div>
-            <div className="px-6 py-3 bg-teal-50/50 border-b border-teal-100/50 text-[10px] text-teal-800/70 leading-tight">
+            <div className="px-6 py-3 bg-teal-500/10 border-b border-teal-500/20 text-[10px] text-teal-800 dark:text-teal-400 leading-tight backdrop-blur-sm">
                 <strong>Context Layer:</strong> {meta.disclaimer}
             </div>
-            <div className="p-6 grid gap-4">
+            <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                }}
+                className="p-6 grid gap-4"
+            >
                 {metrics.map((m: any, idx: number) => {
                     const advice = getEnvAdvice(m.label, m.value, m.status);
                     return (
-                        <div key={idx} className="bg-white border boundary-gray-200 rounded-lg p-3 shadow-sm relative overflow-hidden">
-                            <div className="flex justify-between items-start mb-2"><span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">{m.label}</span><Zap className="w-3 h-3 text-teal-400" /></div>
-                            <div className="flex items-baseline space-x-2 mb-1"><span className="text-lg font-bold text-gray-800">{m.value}</span><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${m.status === 'Good' || m.status === 'Clear' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'}`}>{m.status}</span></div>
+                        <motion.div
+                            key={idx}
+                            variants={{
+                                hidden: { opacity: 0, y: 10 },
+                                visible: { opacity: 1, y: 0 }
+                            }}
+                            className="bg-white/60 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-lg p-3 shadow-sm relative overflow-hidden backdrop-blur-md"
+                        >
+                            <div className="flex justify-between items-start mb-2"><span className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wider">{m.label}</span><Zap className="w-3 h-3 text-teal-400 drop-shadow-sm" /></div>
+                            <div className="flex items-baseline space-x-2 mb-1"><span className="text-lg font-bold text-gray-800 dark:text-white drop-shadow-sm">{m.value}</span><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${m.status === 'Good' || m.status === 'Clear' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-300'}`}>{m.status}</span></div>
 
                             {/* Safety Recommendation */}
                             {advice && (
-                                <div className="mt-2 text-[10px] text-gray-600 bg-teal-50/50 p-2 rounded leading-tight border border-teal-100/50 flex items-start">
-                                    <span className="mr-1.5 text-teal-600">💡</span>
+                                <div className="mt-2 text-[10px] text-teal-800 dark:text-teal-200 bg-teal-500/10 p-2 rounded leading-tight border border-teal-500/20 flex items-start">
+                                    <span className="mr-1.5 text-teal-600 dark:text-teal-400">💡</span>
                                     {advice}
                                 </div>
                             )}
 
-                            <div className="mt-2 pt-2 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center text-[9px] text-gray-400 dark:text-gray-500">
+                            <div className="mt-2 pt-2 border-t border-black/5 dark:border-white/10 flex justify-between items-center text-[9px] text-gray-500 dark:text-gray-400">
                                 <span>{m.source}</span>
                                 <div className="flex items-center space-x-2">
-                                    <span className="bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-1 rounded uppercase tracking-tighter text-[8px] font-bold">Satellite</span>
+                                    <span className="bg-teal-500/10 text-teal-700 dark:text-teal-400 px-1 rounded uppercase tracking-tighter text-[8px] font-bold">Satellite</span>
                                     <span>Res: {m.res}</span>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     );
                 })}
-            </div>
-            <div className="p-6 border-t border-gray-100 dark:border-gray-800">
+            </motion.div>
+            <div className="p-6 border-t border-white/5">
                 <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">PM2.5 Trend ({days === 1 ? 'Last 24h' : 'Last 7 Days'})</h4>
                 <div className="relative h-24 w-full flex items-end px-1 space-x-[2px]">
                     {trend.map((t: any, idx: number) => {
                         const h = (t.val / 50) * 100;
-                        return <div key={idx} className="flex-1 bg-teal-100/50 hover:bg-teal-200 transition-colors rounded-t-sm" style={{ height: `${Math.max(h, 5)}%` }} title={`${t.day}: ${t.val}`} />
+                        return <motion.div initial={{ height: 0 }} animate={{ height: `${Math.max(h, 5)}%` }} transition={{ delay: idx * 0.05, duration: 0.5, ease: "easeOut" }} key={idx} className="flex-1 bg-teal-500/30 hover:bg-teal-500/50 transition-colors rounded-t-sm shadow-[0_0_8px_rgba(20,184,166,0.2)]" title={`${t.day}: ${t.val}`} />
                     })}
                 </div>
             </div>
@@ -398,10 +449,33 @@ function PlaceholderView({ title, icon: Icon, desc }: { title: string, icon: any
 }
 
 function LoadingState() {
-    return <div className="p-6 flex items-center justify-center text-gray-500"><Loader2 className="w-6 h-6 animate-spin mr-2" />Analyzing...</div>;
+    return (
+        <div className="p-6 space-y-6 animate-pulse mt-4">
+            <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 dark:bg-white/5 rounded-2xl shadow-inner"></div>
+                <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-white/20 dark:bg-white/5 rounded w-1/3"></div>
+                    <div className="h-3 bg-white/20 dark:bg-white/5 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div className="space-y-3">
+                <div className="h-24 bg-white/10 dark:bg-white/5 rounded-xl shadow-inner"></div>
+                <div className="h-24 bg-white/10 dark:bg-white/5 rounded-xl shadow-inner"></div>
+            </div>
+            <div className="flex justify-center mt-6">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-indigo-400/50 flex items-center">
+                    <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                    Synchronizing Data Layer...
+                </span>
+            </div>
+        </div>
+    );
 }
-function ErrorState() {
-    return <div className="p-6 text-red-500 text-sm">Failed to load data.</div>;
+function ErrorState({ error }: { error?: any }) {
+    return <div className="p-6 text-red-500 text-sm whitespace-pre-wrap break-all flex flex-col space-y-2">
+        <span className="font-bold">Failed to load data.</span>
+        {error && <span className="text-xs font-mono">{String(error.message || error)}</span>}
+    </div>;
 }
 
 // --- Helpers ---
@@ -432,7 +506,8 @@ function getEnvAdvice(label: string, value: string | number, status: string) {
 function AlertsView({ lat, lng }: { lat: number, lng: number }) {
     const { data, isLoading } = useSWR(
         `${process.env.NEXT_PUBLIC_API_URL}/safety/context/alerts/?lat=${lat}&lng=${lng}`,
-        fetcher
+        fetcher,
+        { keepPreviousData: true, revalidateOnFocus: false, revalidateOnReconnect: false }
     );
 
     if (isLoading || !data) return <LoadingState />;
@@ -456,20 +531,35 @@ function AlertsView({ lat, lng }: { lat: number, lng: number }) {
 
             {alerts.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 dark:text-gray-500">
-                    <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Zap className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                    <div className="w-12 h-12 bg-white/50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+                        <Zap className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                     </div>
                     <p className="text-xs">No active alerts for this specific location.</p>
                 </div>
             ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                    }}
+                    className="divide-y divide-white/5"
+                >
                     {alerts.map((a: any) => {
                         const Icon = getIcon(a.category);
                         return (
-                            <div key={a.id} className="p-5 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors group">
+                            <motion.div
+                                key={a.id}
+                                variants={{
+                                    hidden: { opacity: 0, x: -10 },
+                                    visible: { opacity: 1, x: 0 }
+                                }}
+                                className="p-5 hover:bg-white/50 dark:hover:bg-white/5 transition-colors group backdrop-blur-sm"
+                            >
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="flex items-center space-x-2">
-                                        <div className={`p-1.5 rounded-md ${a.severity > 5 ? 'bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' : 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400'}`}>
+                                        <div className={`p-1.5 rounded-md ${a.severity > 5 ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'} shadow-sm`}>
                                             <Icon className="w-4 h-4" />
                                         </div>
                                         <div className="flex flex-col">
@@ -495,10 +585,10 @@ function AlertsView({ lat, lng }: { lat: number, lng: number }) {
                                 <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed pl-8 line-clamp-3">
                                     {a.summary}
                                 </p>
-                            </div>
+                            </motion.div>
                         );
                     })}
-                </div>
+                </motion.div>
             )}
             <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-400 dark:text-gray-500 leading-tight">
                 <strong>Disclaimer:</strong> {meta.disclaimer}
@@ -512,7 +602,8 @@ function AlertsView({ lat, lng }: { lat: number, lng: number }) {
 function TrendsView({ lat, lng }: { lat: number, lng: number }) {
     const { data, isLoading } = useSWR(
         `${process.env.NEXT_PUBLIC_API_URL}/safety/context/incidents/?lat=${lat}&lng=${lng}&days=365`,
-        fetcher
+        fetcher,
+        { keepPreviousData: true, revalidateOnFocus: false, revalidateOnReconnect: false }
     );
 
     // State for interactive tooltip & selection
@@ -639,7 +730,15 @@ function TrendsView({ lat, lng }: { lat: number, lng: number }) {
                 ) : (
                     <div className="relative">
                         {/* Monthly Bar Chart */}
-                        <div className="h-64 flex items-end justify-between space-x-2 pt-6">
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={{
+                                hidden: { opacity: 0 },
+                                visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
+                            }}
+                            className="h-64 flex items-end justify-between space-x-2 pt-6"
+                        >
                             {chartData.map((t: any, i: number) => {
                                 const heightPct = (t.count / maxCount) * 100;
                                 const isHovered = hoveredItem?.key === t.key;
@@ -648,8 +747,12 @@ function TrendsView({ lat, lng }: { lat: number, lng: number }) {
                                 const isActive = isHovered || isSelected;
 
                                 return (
-                                    <div
+                                    <motion.div
                                         key={i}
+                                        variants={{
+                                            hidden: { y: 20, opacity: 0 },
+                                            visible: { y: 0, opacity: 1 }
+                                        }}
                                         className="flex-1 flex flex-col items-center group relative h-full justify-end cursor-pointer"
                                         onMouseEnter={() => setHoveredItem(t)}
                                         onMouseLeave={() => setHoveredItem(null)}
@@ -670,17 +773,24 @@ function TrendsView({ lat, lng }: { lat: number, lng: number }) {
                                             style={{ height: `${Math.max(heightPct, 3)}%` }}
                                         >
                                             {/* Tooltip on Hover */}
-                                            {isHovered && (
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 text-[10px] font-bold text-white bg-gray-900 dark:bg-white dark:text-gray-900 px-2 py-1 rounded shadow-xl whitespace-nowrap z-30 pointer-events-none">
-                                                    {t.count} Signals
-                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-white"></div>
-                                                </div>
-                                            )}
+                                            <AnimatePresence>
+                                                {isHovered && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 5 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 5 }}
+                                                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 text-[10px] font-bold text-white bg-indigo-900/90 dark:bg-white dark:text-gray-900 px-2 py-1 rounded shadow-xl whitespace-nowrap z-30 pointer-events-none backdrop-blur-sm"
+                                                    >
+                                                        {t.count} Signals
+                                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-indigo-900/90 dark:border-t-white"></div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
-                                    </div>
-                                )
+                                    </motion.div>
+                                );
                             })}
-                        </div>
+                        </motion.div>
 
                         {/* Month Labels */}
                         <div className="flex justify-between mt-3 px-1 border-t border-gray-100 dark:border-gray-800 pt-2">
@@ -723,13 +833,13 @@ function TrendsView({ lat, lng }: { lat: number, lng: number }) {
                     </p>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 
 function EvidencePill({ icon: Icon, label, type, color, date }: any) {
     return (
-        <div className="bg-white dark:bg-gray-950 px-3 py-2.5 rounded border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="bg-white/60 dark:bg-white/5 backdrop-blur-md px-3 py-2.5 rounded border border-white/20 dark:border-white/10 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center text-xs font-semibold text-gray-700 dark:text-gray-200"><Icon className={`w-3.5 h-3.5 mr-2 ${color}`} />{label}</div>
                 <span className="text-[9px] font-mono text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1 rounded uppercase tracking-tighter">{type}</span>

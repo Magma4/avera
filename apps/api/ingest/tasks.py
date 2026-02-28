@@ -6,10 +6,18 @@ from .models import DataSource, IngestRun
 from .connectors.rss import RSSConnector
 
 import logging
+from celery.exceptions import SoftTimeLimitExceeded
+
 logger = logging.getLogger(__name__)
 
-@shared_task
-def ingest_source(source_slug):
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_kwargs={'max_retries': 3},
+    retry_backoff=True, # Exponential backoff: 1s, 2s, 4s...
+    retry_backoff_max=60 # Max delay between retries
+)
+def ingest_source(self, source_slug):
     try:
         source = DataSource.objects.get(slug=source_slug)
     except DataSource.DoesNotExist:
@@ -42,6 +50,16 @@ def ingest_source(source_slug):
             connector = CSVConnector(source)
             count = connector.run()
 
+        elif connector_type == 'airnow' or source.slug == 'epa-airnow':
+            from .connectors.airnow_connector import AirNowConnector
+            connector = AirNowConnector(source)
+            count = connector.run()
+
+        elif connector_type == 'usgs' or source.slug == 'usgs-earthquakes':
+            from .connectors.usgs_connector import USGSConnector
+            connector = USGSConnector(source)
+            count = connector.run()
+
         else:
             # Fallback or generic logic if we add more
             # For now just log
@@ -56,11 +74,17 @@ def ingest_source(source_slug):
         return f"Ingested {count} items for {source.slug}"
 
     except Exception as e:
-        run.status = IngestRun.Status.FAILED
-        run.error_log = str(e)
-        run.save()
-        logger.exception(f"Ingest failed for {source_slug}")
-        return f"Failed to ingest {source.slug}: {e}"
+        # We only log failure to DB on the final retry
+        if self.request.retries == self.max_retries:
+            run.status = IngestRun.Status.FAILED
+            run.error_log = str(e)
+            run.save()
+            logger.exception(f"Ingest permanently failed for {source_slug} after {self.max_retries} retries")
+        else:
+            logger.warning(f"Ingest failed for {source_slug}, retrying... ({self.request.retries}/{self.max_retries}): {e}")
+
+        # Re-raise so celery catches it and handles the retry
+        raise e
 
 @shared_task
 def trigger_all_ingests():
